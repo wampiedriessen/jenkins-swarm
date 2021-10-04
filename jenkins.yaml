@@ -1,0 +1,27 @@
+---
+- hosts: jenkins
+  vars:
+    jenkins_uid: '1420'
+  tasks:
+    - name: create Jenkins user
+      ansible.builtin.user:
+        name: jenkins
+        uid: "{{ jenkins_uid }}"
+        expires: -1
+    - name: create Jenkins folder
+      file:
+        path: /opt/jenkins_home
+        owner: jenkins
+        group: jenkins
+        mode: 0755
+    - name: spin up Jenkins
+      community.docker.docker_container:
+        name: jenkins
+        image: jenkins/jenkins:lts-jdk11
+        state: started
+        user: "{{ jenkins_uid }}"
+        ports:
+          - 80:8080
+          - 50000:50000
+        volumes:
+          - /opt/jenkins_home:/var/jenkins_home:rw

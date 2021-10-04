@@ -1,0 +1,5 @@
+---
+- import_playbook: setup.yaml
+- import_playbook: swarm.yaml
+
+- import_playbook: jenkins.yaml

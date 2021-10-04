@@ -1,0 +1,47 @@
+---
+- hosts: swarm
+  tasks:
+    - name: Remove Swarm
+      community.docker.docker_swarm:
+        state: absent
+        force: true
+
+    - name: Register the first manager's IP
+      run_once: true # run_once runs on _one_ machine, but facts are distributed to _all_ machines
+      delegate_to: "{{ groups['swarm-manager'][0] }}"
+      set_fact:
+        first_master_ip: "{{ ansible_eth1.ipv4.address }}"
+
+    - name: Init a new swarm with default parameters
+      run_once: true # run_once runs on _one_ machine, but facts are distributed to _all_ machines
+      delegate_to: "{{ groups['swarm-manager'][0] }}"
+      register: swarm_init
+      community.docker.docker_swarm:
+        state: present
+        advertise_addr: "eth1"
+        listen_addr: "eth1"
+
+# TODO:
+# - hosts: swarm-manager
+#   tasks:
+#     - name: Expose API
+#       community.docker.expose_api:
+#         yes.
+
+- hosts: swarm-manager
+  tasks:
+    - name: Add nodes
+      community.docker.docker_swarm:
+        state: join
+        join_token: "{{ swarm_init.swarm_facts.JoinTokens.Manager }}"
+        remote_addrs:
+          - "{{ first_master_ip }}:2377"
+
+- hosts: swarm-assistant
+  tasks:
+    - name: Add nodes
+      community.docker.docker_swarm:
+        state: join
+        join_token: "{{ swarm_init.swarm_facts.JoinTokens.Worker }}"
+        remote_addrs:
+          - "{{ first_master_ip }}:2377"

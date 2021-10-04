@@ -1,0 +1,31 @@
+- hosts: all
+  tasks:
+
+    - name: Add Docker repo
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docer-ce.repo
+      become: yes
+
+    - name: Install yum stuff
+      dnf:
+        name:
+          - python3
+          - 'docker-ce'
+          - 'docker-ce-cli'
+          - 'containerd.io'
+        state: present
+
+    - name: Install pip stuff
+      pip:
+        name:
+          - docker
+          - docker-compose
+        state: present
+
+    - name: Ensure docker service started
+      systemd:
+        name: docker
+        daemon_reload: yes
+        enabled: true
+        state: started
